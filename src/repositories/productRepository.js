@@ -12,11 +12,21 @@ exports.create = (data) => {
   return Product.create(data);
 };
 
-exports.update = (id, data) => {
-  return Product.update(data, {
+// ================= FIX UPDATE =================
+exports.update = async (id, data) => {
+  const product = await Product.findOne({
     where: { product_id: id }
   });
+
+  if (!product) {
+    return null;
+  }
+
+  await product.update(data);
+
+  return product; // ✅ INSTANCE SEQUELIZE
 };
+// =============================================
 
 exports.remove = (id) => {
   return Product.destroy({

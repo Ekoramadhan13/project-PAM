@@ -8,6 +8,7 @@ router.use(authMiddleware);
 
 // User routes
 router.post('/checkout', ordersController.checkout);
+router.post('/checkout-selected', authMiddleware, ordersController.checkoutSelected);
 router.get('/my-orders', ordersController.getUserOrders); // pastikan nama function sesuai controller
 
 // Admin routes

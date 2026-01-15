@@ -2,20 +2,31 @@ const { Orders, OrderItems, Cart, Product, sequelize } = require('../../models')
 
 /**
  * ============================
- * CHECKOUT USER
+ * CHECKOUT USER (SELECTED ONLY)
  * ============================
  */
-exports.checkout = async (user_id, address, payment_method, payment_provider) => {
+exports.checkoutSelected = async (
+  user_id,
+  address,
+  payment_method,
+  payment_provider,
+  product_ids
+) => {
   return await sequelize.transaction(async (t) => {
 
     const cartItems = await Cart.findAll({
-      where: { user_id },
+      where: {
+        user_id,
+        product_id: product_ids
+      },
       include: [{ model: Product, as: 'product' }],
       transaction: t,
       lock: t.LOCK.UPDATE
     });
 
-    if (!cartItems.length) throw new Error('Keranjang kosong');
+    if (!cartItems.length) {
+      throw new Error('Produk checkout tidak ditemukan');
+    }
 
     // Validasi stok
     for (const item of cartItems) {
@@ -53,12 +64,19 @@ exports.checkout = async (user_id, address, payment_method, payment_provider) =>
       await item.product.save({ transaction: t });
     }
 
-    // Kosongkan keranjang
-    await Cart.destroy({ where: { user_id }, transaction: t });
+    // Hapus cart yang dicover checkout saja
+    await Cart.destroy({
+      where: {
+        user_id,
+        product_id: product_ids
+      },
+      transaction: t
+    });
 
     return order;
   });
 };
+
 
 /**
  * ============================

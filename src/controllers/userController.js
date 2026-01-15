@@ -4,7 +4,14 @@ exports.getUserById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const user = await userService.getUserById(id);
+    // Validasi ID
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        message: 'ID user tidak valid'
+      });
+    }
+
+    const user = await userService.getUserById(Number(id));
 
     if (!user) {
       return res.status(404).json({
@@ -12,20 +19,33 @@ exports.getUserById = async (req, res) => {
       });
     }
 
-    res.json(user);
+    // Jangan kirim data sensitif
+    const { password, ...safeUser } = user;
+
+    return res.status(200).json({
+      message: 'Data user berhasil diambil',
+      data: safeUser
+    });
+
   } catch (error) {
-    res.status(500).json({
-      message: error.message
+    console.error('getUserById error:', error);
+    return res.status(500).json({
+      message: 'Terjadi kesalahan pada server'
     });
   }
 };
 
-// Admin logout
+// ===================== ADMIN LOGOUT =====================
 exports.logoutAdmin = async (req, res) => {
   try {
-    // Sama seperti user logout, cukup hapus token di client
-    return res.json({ message: 'Admin logout berhasil. Silakan login kembali.' });
+    // Jika menggunakan JWT → logout cukup hapus token di client
+    return res.status(200).json({
+      message: 'Admin logout berhasil. Silakan login kembali.'
+    });
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    console.error('logoutAdmin error:', err);
+    return res.status(500).json({
+      message: 'Gagal logout admin'
+    });
   }
 };

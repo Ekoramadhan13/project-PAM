@@ -20,7 +20,7 @@ exports.register = async (payload) => {
 
 exports.login = async (email, password) => {
   const user = await userRepository.findByEmail(email);
-  if (!user) throw new Error('Email atau password salah');
+  if (!user) throw new Error('User tidak ditemukan');
 
   const isValid = await bcrypt.compare(password, user.password);
   if (!isValid) throw new Error('Email atau password salah');

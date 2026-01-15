@@ -1,11 +1,33 @@
 const productService = require('../services/productService');
 
+// helper untuk bikin full URL
+const withImageUrl = (req, product) => {
+  if (!product) return product;
+
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+  // untuk array
+  if (Array.isArray(product)) {
+    return product.map(p => ({
+      ...p.toJSON(),
+      image_url: p.image_url ? `${baseUrl}${p.image_url}` : null
+    }));
+  }
+
+  // untuk single object
+  return {
+    ...product.toJSON(),
+    image_url: product.image_url ? `${baseUrl}${product.image_url}` : null
+  };
+};
+
 // ================= USER =================
 exports.getAll = async (req, res) => {
   try {
     const { category } = req.query;
     const products = await productService.getAllProducts(category);
-    res.json(products);
+
+    res.json(withImageUrl(req, products));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -17,7 +39,8 @@ exports.getById = async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: 'Produk tidak ditemukan' });
     }
-    res.json(product);
+
+    res.json(withImageUrl(req, product));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -26,9 +49,6 @@ exports.getById = async (req, res) => {
 // ================= ADMIN =================
 exports.create = async (req, res) => {
   try {
-    console.log('REQ BODY ===>', req.body);
-    console.log('REQ FILE ===>', req.file);
-
     const { name, description, price, stock, category } = req.body;
 
     if (!category) {
@@ -50,7 +70,7 @@ exports.create = async (req, res) => {
 
     res.status(201).json({
       message: 'Produk berhasil ditambahkan',
-      product
+      product: withImageUrl(req, product)
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -63,12 +83,15 @@ exports.update = async (req, res) => {
       ? `/uploads/${req.file.filename}`
       : undefined;
 
-    await productService.updateProduct(req.params.id, {
+    const updatedProduct = await productService.updateProduct(req.params.id, {
       ...req.body,
       ...(image_url && { image_url })
     });
 
-    res.json({ message: 'Produk berhasil diperbarui' });
+    res.json({
+      message: 'Produk berhasil diperbarui',
+      product: withImageUrl(req, updatedProduct)
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
